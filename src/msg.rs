@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use crate::state::State;
-use num::BigUint;
+use cosmwasm_std::Uint128;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InitMsg {
@@ -24,13 +24,13 @@ pub type ConfigResponse = State;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct RefDataResponse {
-    pub rate: BigUint,
-    pub last_update: BigUint,
+    pub rate: Uint128,
+    pub last_update: Uint128,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ReferenceData {
-    pub rate: BigUint,
-    pub last_updated_base: BigUint,
-    pub last_updated_quote: BigUint,
+    pub rate: Uint128,
+    pub last_updated_base: Uint128,
+    pub last_updated_quote: Uint128,
 }

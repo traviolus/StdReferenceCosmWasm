@@ -1,13 +1,12 @@
-use cosmwasm_std::{
-    to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, StdError,
-    StdResult, Storage,
-};
+use cosmwasm_std::{to_binary, Api, Binary, Env, Extern, HandleResponse, InitResponse, Querier, StdError, StdResult, Storage, Uint128};
 
 use crate::msg::{HandleMsg, InitMsg, QueryMsg, ConfigResponse, RefDataResponse, ReferenceData};
 use crate::state::{RefData, State, config, config_read};
 use std::collections::HashMap;
-use num::BigUint;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+pub static E9: u64 = 1_000_000_000;
+pub static E18: u128 = 1_000_000_000_000_000_000;
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
@@ -58,9 +57,9 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
             let base_ref_data = get_ref_data(deps,base).unwrap();
             let quote_ref_data = get_ref_data(deps, quote).unwrap();
             to_binary(&ReferenceData {
-                rate: (base_ref_data.rate * BigUint::from(1e18 as u128)) / quote_ref_data.rate,
-                last_updated_base: BigUint::from(base_ref_data.last_update),
-                last_updated_quote: BigUint::from(quote_ref_data.last_update),
+                rate: Uint128((base_ref_data.rate.u128() * E18)/ quote_ref_data.rate.u128()),
+                last_updated_base: base_ref_data.last_update,
+                last_updated_quote: quote_ref_data.last_update,
             })
         }
     }
@@ -74,8 +73,8 @@ fn query_refs<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>) -> StdResu
 fn get_ref_data<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, symbol: String) -> Result<RefDataResponse, StdError> {
     if symbol == String::from("USD") {
         return Ok(RefDataResponse {
-            rate: BigUint::from(1e9 as u128),
-            last_update: BigUint::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()),
+            rate: Uint128::from(E9),
+            last_update: Uint128::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()),
         });
     }
     let state = config_read(&deps.storage).load()?;
@@ -84,8 +83,8 @@ fn get_ref_data<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, symbol: 
         return Err(StdError::not_found("RefData"));
     }
     return Ok(RefDataResponse {
-        rate: BigUint::from(ref_data.rate),
-        last_update:BigUint::from(ref_data.resolve_time),
+        rate: Uint128::from(ref_data.rate),
+        last_update:Uint128::from(ref_data.resolve_time),
     });
 }
 
@@ -189,10 +188,10 @@ mod tests {
         let msg = HandleMsg::Relay { symbols: vec![String::from("MATIC")], rates: vec![112u64], resolve_times: vec![1625108298u64], request_ids: vec![124u64] };
         let _res = handle(&mut deps, mock_env("anyone", &[]), msg).unwrap();
 
-        let msg = QueryMsg::GetReferenceData { base: String::from("USD"), quote: String::from("MATIC") };
+        let msg = QueryMsg::GetReferenceData { base: String::from("MATIC"), quote: String::from("USD") };
         let res = query(&mut deps, msg).unwrap();
         let value: ReferenceData = from_binary(&res).unwrap();
 
-        assert_eq!(ReferenceData{rate: BigUint::from(8928571428571428571428571u128), last_updated_base: BigUint::from(1625119856u128), last_updated_quote: BigUint::from(1625108298u128)}, value);
+        assert_eq!(ReferenceData{rate: Uint128::from(8928571428571428571428571u128), last_updated_base: Uint128::from(1625119856u128), last_updated_quote: Uint128::from(1625108298u128)}, value);
     }
 }
