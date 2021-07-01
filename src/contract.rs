@@ -3,18 +3,19 @@ use cosmwasm_std::{to_binary, Api, Binary, Env, Extern, HandleResponse, InitResp
 use crate::msg::{HandleMsg, InitMsg, QueryMsg, ConfigResponse, RefDataResponse, ReferenceData};
 use crate::state::{RefData, State, config, config_read};
 use std::collections::HashMap;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 pub static E9: u64 = 1_000_000_000;
 pub static E18: u128 = 1_000_000_000_000_000_000;
 
 pub fn init<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
-    _env: Env,
+    env: Env,
     _msg: InitMsg,
 ) -> StdResult<InitResponse> {
+    let mut init_refs = HashMap::new();
+    init_refs.insert(String::from("USD"), RefData{rate: u64::from(E9), resolve_time: env.block.time, request_id: 0u64});
     let state = State {
-        refs: HashMap::new(),
+        refs: init_refs,
     };
     config(&mut deps.storage).save(&state)?;
     Ok(InitResponse::default())
@@ -71,12 +72,6 @@ fn query_refs<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>) -> StdResu
 }
 
 fn get_ref_data<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, symbol: String) -> Result<RefDataResponse, StdError> {
-    if symbol == String::from("USD") {
-        return Ok(RefDataResponse {
-            rate: Uint128::from(E9),
-            last_update: Uint128::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()),
-        });
-    }
     let state = config_read(&deps.storage).load()?;
     let ref_data = state.refs.get(&symbol).unwrap();
     if ref_data.resolve_time <= 0 {
