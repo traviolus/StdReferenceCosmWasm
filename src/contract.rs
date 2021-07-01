@@ -207,23 +207,4 @@ mod tests {
 
         assert_eq!(ReferenceData{rate: BigUint::from(8928571428571428571428571u128), last_updated_base: BigUint::from(1571797419879305533u128), last_updated_quote: BigUint::from(1625108298000000000u128)}, value);
     }
-
-    #[test]
-    fn query_test_notfound() {
-        let mut deps = mock_dependencies(&[]);
-
-        let msg = InstantiateMsg {};
-        let info = mock_info("creator", &[]);
-        let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
-
-        let info = mock_info("creator", &[]);
-        let msg = ExecuteMsg::Relay { symbols: vec![String::from("ETH")], rates: vec![100u64], resolve_times: vec![1625108298000000000u64], request_ids: vec![99u64] };
-        let _res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
-
-        let _info = mock_info("querier", &[]);
-        let msg = QueryMsg::GetReferenceData { base: String::from("USD"), quote: String::from("BAND") };
-        let res = query(deps.as_ref(), mock_env(), msg).unwrap();
-        let value: ReferenceData = from_binary(&res).unwrap();
-
-    }
 }
